@@ -1,3 +1,20 @@
 {
-
+  "name": "yzh52521/flysystem-obs",
+  "description": "Flysystem adapter for the obs storage.",
+  "require": {
+    "php": ">=7.1.0",
+    "league/flysystem": "^1.0",
+    "obs/esdk-obs-php": "^3.2"
+  },
+  "autoload": {
+    "psr-4": {
+      "yzh52521\\Flysystem\\Obs\\": "src/"
+    }
+  },
+  "authors": [
+    {
+      "name": "yzh52521"
+    }
+  ],
+  "license": "MIT"
 }
