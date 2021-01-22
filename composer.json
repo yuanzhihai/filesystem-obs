@@ -1,6 +1,26 @@
 {
   "name": "yzh52521/flysystem-obs",
   "description": "Flysystem adapter for the obs storage.",
+  "type": "library",
+  "homepage": "https://github.com/yzh52521/flysystem-obs",
+  "license": "MIT",
+  "keywords": [
+    "flysystem-obs",
+    "obs-oss",
+    "flysystem"
+  ],
+  "authors": [
+    {
+      "name": "yzh52521",
+      "email": "yzh52521@gmail.com",
+      "homepage": "https://github.com/yzh52521",
+      "role": "Developer"
+    }
+  ],
+  "support": {
+    "email": "yzh52521@gmail.com",
+    "wiki": "https://github.com/yzh52521"
+  },
   "require": {
     "php": ">=7.1.0",
     "league/flysystem": "^1.0",
@@ -10,11 +30,5 @@
     "psr-4": {
       "yzh52521\\Flysystem\\Obs\\": "src/"
     }
-  },
-  "authors": [
-    {
-      "name": "yzh52521"
-    }
-  ],
-  "license": "MIT"
+  }
 }
