@@ -43,34 +43,23 @@ class ObsAdapter extends AbstractAdapter
 
     /**
      * ObsAdapter constructor.
-     * @param ObsClient $client
-     * @param string $bucket
-     * @param string $prefix
+     * @param array $option
      */
-    public function __construct(
-        ObsClient $client,
-        string $bucket,
-        string $endpoint,
-        string $cdnDomain,
-        bool $ssl,
-        string $prefix = ''
-    ) {
-        $this->client    = $client;
-        $this->bucket    = $bucket;
-        $this->endpoint  = $endpoint;
-        $this->cdnDomain = $cdnDomain;
-        $this->ssl       = $ssl;
-
-        $this->setPathPrefix($prefix);
-    }
-
-    /**
-     * @return ObsClient
-     */
-    public function getClient(): ObsClient
+    public function __construct(array $option = [])
     {
-        return $this->client;
+        $prefix = '';
+        try {
+            $this->bucket    = $option['bucket'];
+            $this->endpoint  = $option['endpoint'];
+            $this->cdnDomain = $option['cdnDomain'];
+            $this->ssl       = $option['ssl'];
+            $this->setPathPrefix($prefix);
+            $this->client = new ObsClient($option);
+        } catch (ObsException $e) {
+            throw $e;
+        }
     }
+
 
     /**
      * @return string
