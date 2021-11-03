@@ -1,4 +1,5 @@
 <?php
+
 namespace yzh52521\Flysystem\Obs;
 
 use League\Flysystem\Adapter\AbstractAdapter;
@@ -156,7 +157,7 @@ class ObsAdapter extends AbstractAdapter
      * @param string $newpath
      * @return bool
      */
-    public function rename($path, $newpath)
+    public function rename($path, $newpath): bool
     {
         if ($this->copy($path, $newpath) && $this->delete($path)) {
             return true;
@@ -170,7 +171,7 @@ class ObsAdapter extends AbstractAdapter
      * @param string $newpath
      * @return bool
      */
-    public function copy($path, $newpath)
+    public function copy($path, $newpath): bool
     {
         $path    = $this->applyPathPrefix($path);
         $newpath = $this->applyPathPrefix($newpath);
@@ -194,7 +195,7 @@ class ObsAdapter extends AbstractAdapter
      * @param string $path
      * @return bool
      */
-    public function delete($path)
+    public function delete($path): bool
     {
         $path = $this->applyPathPrefix($path);
 
@@ -216,7 +217,7 @@ class ObsAdapter extends AbstractAdapter
      * @param string $dirname
      * @return bool
      */
-    public function deleteDir($dirname)
+    public function deleteDir($dirname): bool
     {
         return $this->delete($dirname);
     }

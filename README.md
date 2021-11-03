@@ -5,7 +5,7 @@
 ## Installation
 
 ```
-composer require yzh52521/flysystem-obs -vvv
+composer require yzh52521/flysystem-obs 
 ```
 
 ## Usage
