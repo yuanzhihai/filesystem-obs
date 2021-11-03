@@ -24,7 +24,7 @@
   "require": {
     "php": ">=7.1.0",
     "league/flysystem": "^1.0",
-    "obs/esdk-obs-php": "^3.2"
+    "zing/esdk-obs-php": "^3.2"
   },
   "autoload": {
     "psr-4": {
