@@ -1,6 +1,7 @@
 # filesystem-obs
 
-* PHP >= 7.1
+* PHP >= 7.2
+* League/Flysystem >=2.0
 
 ## Installation
 
@@ -59,7 +60,7 @@ array $flysystem->getMetadata('file.md');
 
 int $flysystem->getSize('file.md');
 
-string $flysystem->getAdapter()->getUrl('file.md'); 
+string $flysystem->getUrl('file.md'); 
 
 string $flysystem->getMimetype('file.md');
 
