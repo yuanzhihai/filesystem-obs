@@ -22,8 +22,8 @@
     "wiki": "https://github.com/yzh52521"
   },
   "require": {
-    "php": ">=7.2.0",
-    "league/flysystem": "^2.0",
+    "php": ">=7.1.0",
+    "league/flysystem": "^1.0",
     "zing/esdk-obs-php": "^3.2"
   },
   "autoload": {

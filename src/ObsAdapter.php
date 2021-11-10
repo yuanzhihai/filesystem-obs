@@ -2,10 +2,9 @@
 
 namespace yzh52521\Flysystem\Obs;
 
+use League\Flysystem\Adapter\AbstractAdapter;
+use League\Flysystem\Adapter\Polyfill\NotSupportingVisibilityTrait;
 use League\Flysystem\Config;
-use League\Flysystem\FileAttributes;
-use League\Flysystem\FilesystemAdapter;
-use League\Flysystem\UnableToWriteFile;
 use Obs\ObsClient;
 use Obs\ObsException;
 
@@ -13,8 +12,9 @@ use Obs\ObsException;
  * Class ObsAdapter
  * @package Obs
  */
-class ObsAdapter implements FilesystemAdapter
+class ObsAdapter extends AbstractAdapter
 {
+    use NotSupportingVisibilityTrait;
 
     /**
      * @var ObsClient
@@ -47,12 +47,14 @@ class ObsAdapter implements FilesystemAdapter
      */
     public function __construct(array $option = [])
     {
+        $prefix = '';
         try {
             $this->bucket    = $option['bucket'];
             $this->endpoint  = $option['endpoint'];
             $this->cdnDomain = $option['cdnDomain'];
             $this->ssl       = $option['ssl'];
-            $this->client    = new ObsClient($option);
+            $this->setPathPrefix($prefix);
+            $this->client = new ObsClient($option);
         } catch (ObsException $e) {
             throw $e;
         }
@@ -67,21 +69,18 @@ class ObsAdapter implements FilesystemAdapter
         return $this->bucket;
     }
 
-    public function fileExists(string $path): bool
-    {
-        return $this->getMetadata($path);
-    }
-
     /**
      * @param string $path
      * @param string $contents
      * @param Config $config
      * @return array|bool|false
      */
-    public function write(string $path, string $contents, Config $config): void
+    public function write($path, $contents, Config $config)
     {
+        $path = $this->applyPathPrefix($path);
+
         try {
-            $this->client->putObject(
+            $object = $this->client->putObject(
                 [
                     'Bucket'     => $this->getBucket(),
                     'Key'        => $path,
@@ -89,29 +88,35 @@ class ObsAdapter implements FilesystemAdapter
                 ]
             );
         } catch (ObsException $e) {
-            throw UnableToWriteFile::atLocation($path, $e->getMessage());
+            return false;
         }
+
+        return $this->normalizeResponse($object);
     }
 
     /**
      * @param string $path
-     * @param resource $contents
+     * @param resource $resource
      * @param Config $config
      * @return array|bool|false
      */
-    public function writeStream(string $path, $contents, Config $config): void
+    public function writeStream($path, $resource, Config $config)
     {
+        $path = $this->applyPathPrefix($path);
+
         try {
-            $this->client->putObject(
+            $object = $this->client->putObject(
                 [
                     'Bucket' => $this->getBucket(),
                     'Key'    => $path,
-                    'Body'   => $contents
+                    'Body'   => $resource
                 ]
             );
         } catch (ObsException $e) {
-            throw UnableToWriteFile::atLocation($path, $e->getMessage());
+            return false;
         }
+
+        return $this->normalizeResponse($object);
     }
 
     /**
@@ -120,7 +125,7 @@ class ObsAdapter implements FilesystemAdapter
      * @param Config $config
      * @return array|bool|false
      */
-    public function update(string $path, string $contents, Config $config)
+    public function update($path, $contents, Config $config)
     {
         return $this->write($path, $contents, $config);
     }
@@ -131,118 +136,121 @@ class ObsAdapter implements FilesystemAdapter
      * @param Config $config
      * @return array|bool|false
      */
-    public function updateStream(string $path, $resource, Config $config)
+    public function updateStream($path, $resource, Config $config)
     {
         return $this->writeStream($path, $resource, $config);
     }
 
     /**
      * @param string $path
-     * @param string $destination
-     * @param Config $config
+     * @param string $newpath
+     * @return bool
      */
-    public function rename(string $path, string $destination, Config $config): void
+    public function rename($path, $newpath): bool
     {
-        $this->copy($path, $destination, $config) && $this->delete($path);
+        if ($this->copy($path, $newpath) && $this->delete($path)) {
+            return true;
+        }
+
+        return false;
     }
-
-    public function move(string $source, string $destination, Config $config): void
-    {
-        $this->copy($source, $destination, $config) && $this->delete($source);
-    }
-
-
-    public function visibility(string $path): FileAttributes
-    {
-        $response = $this->client->getObjectAcl($this->bucket);
-        return new FileAttributes($path, null, $response);
-    }
-
 
     /**
      * @param string $path
-     * @param string $destination
-     * @param Config $config
+     * @param string $newpath
+     * @return bool
      */
-    public function copy(string $path, string $destination, Config $config): void
+    public function copy($path, $newpath): bool
     {
+        $path    = $this->applyPathPrefix($path);
+        $newpath = $this->applyPathPrefix($newpath);
+
         try {
-            $this->client->deleteObject(
+            $object = $this->client->deleteObject(
                 [
                     'Bucket'     => $this->getBucket(),
-                    'Key'        => $destination,
+                    'Key'        => $newpath,
                     'CopySource' => $this->getBucket() . '/' . $path
                 ]
             );
         } catch (ObsException $e) {
-            throw UnableToWriteFile::atLocation($path, $e->getMessage());
+            return false;
         }
+
+        return true;
     }
 
     /**
      * @param string $path
+     * @return bool
      */
-    public function delete(string $path): void
+    public function delete($path): bool
     {
+        $path = $this->applyPathPrefix($path);
+
         try {
-            $this->client->deleteObject(
+            $object = $this->client->deleteObject(
                 [
                     'Bucket' => $this->getBucket(),
                     'Key'    => $path
                 ]
             );
         } catch (ObsException $e) {
-            throw UnableToWriteFile::atLocation($path, $e->getMessage());
+            return false;
         }
+
+        return true;
     }
 
     /**
-     * @param string $path
+     * @param string $dirname
+     * @return bool
      */
-    public function deleteDirectory(string $path): void
+    public function deleteDir($dirname): bool
     {
-        $this->delete($path);
+        return $this->delete($dirname);
     }
 
     /**
-     * @param string $path
+     * @param string $dirname
      * @param Config $config
      * @return array|bool|false
      */
-    public function createDirectory(string $path, Config $config): void
+    public function createDir($dirname, Config $config)
     {
+        $path = $this->applyPathPrefix($dirname);
+
         try {
-            $this->client->putObject(
+            $object = $this->client->putObject(
                 [
                     'Bucket' => $this->getBucket(),
                     'Key'    => $path
                 ]
             );
         } catch (ObsException $e) {
-            throw UnableToWriteFile::atLocation($path, $e->getMessage());
+            return false;
         }
+
+        return $this->normalizeResponse($object);
     }
 
     /**
      * @param string $path
      * @return array|bool|false|null
      */
-    public function has(string $path)
+    public function has($path)
     {
         return $this->getMetadata($path);
-    }
-
-    public function setVisibility(string $path, string $visibility): void
-    {
-
     }
 
     /**
      * @param string $path
      * @return array|bool|false
      */
-    public function read(string $path): string
+    public function read($path)
     {
+        $path = $this->applyPathPrefix($path);
+
         try {
             $object = $this->client->getObject(
                 [
@@ -264,8 +272,10 @@ class ObsAdapter implements FilesystemAdapter
      * @param string $path
      * @return array|bool|false
      */
-    public function readStream(string $path)
+    public function readStream($path)
     {
+        $path = $this->applyPathPrefix($path);
+
         try {
             $object = $this->client->getObject(
                 [
@@ -285,18 +295,20 @@ class ObsAdapter implements FilesystemAdapter
     }
 
     /**
-     * @param string $path
-     * @param bool $deep
+     * @param string $directory
+     * @param bool $recursive
      * @return array|bool
      */
-    public function listContents(string $path, bool $deep): iterable
+    public function listContents($directory = '', $recursive = false)
     {
+        $path = $this->applyPathPrefix($directory);
+
         try {
             $object = $this->client->listObjects(
                 [
                     'Bucket'  => $this->getBucket(),
                     'MaxKeys' => 1000,
-                    'Prefix'  => $path,
+                    'Prefix'  => $directory,
                     'Marker'  => null
                 ]
             );
@@ -312,7 +324,8 @@ class ObsAdapter implements FilesystemAdapter
 
         return array_map(
             function ($entry) {
-                return $this->normalizeResponse($entry);
+                $path = $this->removePathPrefix($entry['Key']);
+                return $this->normalizeResponse($entry, $path);
             },
             $contents
         );
@@ -322,8 +335,10 @@ class ObsAdapter implements FilesystemAdapter
      * @param string $path
      * @return array|bool|false
      */
-    public function getMetadata(string $path)
+    public function getMetadata($path)
     {
+        $path = $this->applyPathPrefix($path);
+
         try {
             $object = $this->client->getObjectMetadata(
                 [
@@ -342,24 +357,19 @@ class ObsAdapter implements FilesystemAdapter
      * @param string $path
      * @return array|bool|false
      */
-    public function getSize(string $path)
+    public function getSize($path)
     {
         $object         = $this->getMetadata($path);
         $object['size'] = $object['ContentLength'];
-        return $object;
-    }
 
-    public function fileSize(string $path): FileAttributes
-    {
-        $object = $this->getSize($path);
-        return new FileAttributes($path, $object['size']);
+        return $object;
     }
 
     /**
      * @param string $path
      * @return array|bool|false
      */
-    public function getMimetype(string $path)
+    public function getMimetype($path)
     {
         $object             = $this->getMetadata($path);
         $object['mimetype'] = $object['ContentType'];
@@ -367,25 +377,13 @@ class ObsAdapter implements FilesystemAdapter
         return $object;
     }
 
-    public function mimeType(string $path): FileAttributes
-    {
-        $object = $this->getMimetype($path);
-        return new FileAttributes($path, $object['mimetype']);
-    }
-
     /**
      * @param string $path
      * @return array|bool|false
      */
-    public function getTimestamp(string $path)
+    public function getTimestamp($path)
     {
         return $this->getMetadata($path);
-    }
-
-    public function lastModified(string $path): FileAttributes
-    {
-        $response = $this->getMetadata($path);
-        return new FileAttributes($path, null, null, $response['last-modified']);
     }
 
     /**
@@ -405,7 +403,9 @@ class ObsAdapter implements FilesystemAdapter
      */
     public function normalizeResponse($object): array
     {
-        $result = ['path' => $object];
+        $path = ltrim($this->removePathPrefix($object['Key']), '/');
+
+        $result = ['path' => $path];
 
         if (isset($object['LastModified'])) {
             $result['timestamp'] = strtotime($object['LastModified']);
@@ -422,5 +422,4 @@ class ObsAdapter implements FilesystemAdapter
 
         return $result;
     }
-
 }
