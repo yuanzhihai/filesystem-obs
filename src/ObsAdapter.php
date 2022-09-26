@@ -423,4 +423,8 @@ class ObsAdapter implements FilesystemAdapter
         return $result;
     }
 
+    public function directoryExists(string $path): bool
+    {
+
+    }
 }
