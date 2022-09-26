@@ -1,7 +1,7 @@
 # filesystem-obs
 
-* PHP >= 7.2
-* League/Flysystem >=2.0
+* PHP >= 8.0
+* League/Flysystem > 2.0 - 3.0
 
 ## Installation
 
@@ -13,22 +13,27 @@ composer require yzh52521/flysystem-obs
 
 ```php
 use League\Flysystem\Filesystem;
+use Obs\ObsClient;
 use yzh52521\Flysystem\Obs\ObsAdapter;
 
+$prefix = '';
 $config = [
-    'key' => 'OBS_ACCESS_ID', // <Your Huawei OBS AccessKeyId>
-    'secret' => 'OBS_ACCESS_KEY', // <Your Huawei OBS AccessKeySecret>
-    'bucket' => 'OBS_BUCKET', // <OBS bucket name>
-    'endpoint' => 'OBS_ENDPOINT', // <the endpoint of OBS, E.g: (https:// or http://).obs.cn-east-2.myhuaweicloud.com | custom domain, E.g:img.abc.com> OBS 外网节点或自定义外部域名
-    'cdn_domain' => 'OBS_CDN_DOMAIN', //<CDN domain, cdn域名> 如果isCName为true, getUrl会判断cdnDomain是否设定来决定返回的url，如果cdnDomain未设置，则使用endpoint来生成url，否则使用cdn
-    'ssl_verify' => 'OBS_SSL_VERIFY', // <true|false> true to use 'https://' and false to use 'http://'. default is false,
-    'debug' => 'APP_DEBUG', // <true|false>
+    'key' => 'aW52YWxpZC1rZXk=',
+    'secret' => 'aW52YWxpZC1zZWNyZXQ=',
+    'bucket' => 'test',
+    'endpoint' => 'obs.cn-east-3.myhuaweicloud.com',
 ];
 
-$adapter = new ObsAdapter($config);
+$config['options'] = [
+    'url' => '',
+    'endpoint' => $config['endpoint'], 
+    'bucket_endpoint' => '',
+    'temporary_url' => '',
+];
 
-$flysystem = new League\Flysystem\Filesystem($adapter);
-
+$client = new ObsClient($config);
+$adapter = new ObsAdapter($client, $config['bucket'], $prefix, null, null, $config['options']);
+$flysystem = new Filesystem($adapter);
 ```
 
 ## API
