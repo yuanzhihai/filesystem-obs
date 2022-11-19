@@ -1,7 +1,7 @@
 # filesystem-obs
 
-* PHP >= 7.2+
-* League/Flysystem > 2.0+
+* PHP >= 8.0+
+* League/Flysystem > 3.10+
 
 ## Installation
 
